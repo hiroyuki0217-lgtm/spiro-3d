@@ -52,9 +52,14 @@ body{
   font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--ink);
   min-width:262px;pointer-events:none;backdrop-filter:blur(6px);
 }
-#titleblock .tb-h{border-bottom:1px solid var(--rule);padding:8px 12px;letter-spacing:.1em;
-  color:var(--ink);font-size:11.5px;font-weight:600}
+#titleblock .tb-h{width:100%;border:0;border-bottom:1px solid var(--rule);padding:8px 12px;
+  display:flex;align-items:center;justify-content:space-between;gap:18px;background:transparent;
+  color:var(--ink);font:600 11.5px/1.6 var(--mono);letter-spacing:.1em;text-align:left;
+  cursor:pointer;pointer-events:auto}
+#titleblock .tb-fold{font-size:15px;line-height:1;letter-spacing:0}
 #titleblock .tb-b{padding:9px 12px;display:grid;grid-template-columns:auto 1fr;gap:3px 16px}
+#titleblock.collapsed .tb-h{border-bottom:0}
+#titleblock.collapsed .tb-b{display:none}
 #titleblock .tb-b b{font-weight:400;color:var(--ink-60);font-size:12px}
 #titleblock .tb-b span{text-align:right;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 
@@ -65,7 +70,9 @@ body{
 
 /* ---------- panel ---------- */
 #panel{width:318px;flex:0 0 318px;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;touch-action:pan-y;border-right:1px solid var(--rule);background:var(--panel)}
+  overscroll-behavior:contain;touch-action:pan-y;border-right:1px solid var(--rule);
+  /* 背後の作品は気配だけ残し、細い文字の明度差は失わない。 */
+  background:rgba(10,11,13,.94)}
 #panel::-webkit-scrollbar{width:7px}
 #panel::-webkit-scrollbar-thumb{background:var(--rule)}
 
@@ -271,8 +278,22 @@ select{flex:1;font-family:var(--jp);font-size:13px;font-weight:500;padding:9px 7
   #brand{display:none}
   #hint{display:none}
   #titleblock{min-width:0;font-size:9px}
-  #panel{position:absolute;z-index:15;left:0;top:0;width:min(318px,88vw);flex:none;
-    transform:translateX(-102%);transition:transform .2s ease;box-shadow:0 0 40px rgba(0,0,0,.8)}
+  /* iPhone では背後に半端な余白を残さず、設定そのものを一つの画面として扱う。 */
+  #panel{position:absolute;z-index:15;inset:0;width:100%;max-width:100%;height:100dvh;flex:none;
+    overflow-x:hidden;border-right:0;transform:translateX(-102%);transition:transform .2s ease;box-shadow:none}
+  /* 設定ボタンの実寸ぶんだけ見出しを下げ、全画面になっても閉じる操作を隠さない。 */
+  #panel .head{padding-top:calc(62px + env(safe-area-inset-top))}
+  #panel .body,#panel .row,#panel select,#panel .seg{min-width:0}
+  .row.range-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
+  .row.range-row>label{grid-column:1;grid-row:1;flex:none}
+  .row.range-row>.val{grid-column:2;grid-row:1;flex:none}
+  .range-controls{grid-column:1/-1;grid-row:2;display:grid;
+    grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px;width:100%}
+  .range-controls input[type=range]{width:100%;min-width:0;height:44px}
+  /* 指先の的を44px確保し、値の刻み自体は各スライダーがもともと持つ step に従う。 */
+  .range-step{width:44px;height:44px;border:1px solid var(--rule);background:var(--panel2);
+    color:var(--ink);font-family:var(--mono);font-size:20px;line-height:1;cursor:pointer}
+  .range-step:active{background:var(--ink);color:#000}
   #panel.open{transform:none}
 }
 @media (prefers-reduced-motion:reduce){#panel{transition:none}}
@@ -509,12 +530,14 @@ select{flex:1;font-family:var(--jp);font-size:13px;font-weight:500;padding:9px 7
   </aside>
 
   <main id="stage">
-    <button id="toggle">設定</button>
+    <button id="toggle" type="button" aria-controls="panel" aria-expanded="false">設定</button>
     <button id="mrun">▶</button>
     <div id="brand">SPIRO-3D ／ 立体スピログラフ作図機</div>
     <div id="hint">ドラッグ＝回転　ホイール＝拡大縮小　右ドラッグ／Shift＋ドラッグ＝平行移動　ダブルクリック＝視点合わせ</div>
     <div id="titleblock">
-      <div class="tb-h">作図記録 ／ DRAWING LOG</div>
+      <button class="tb-h" id="tbToggle" type="button" aria-expanded="true">
+        <span>作図記録 ／ DRAWING LOG</span><span class="tb-fold" id="tbFold" aria-hidden="true">−</span>
+      </button>
       <div class="tb-b">
         <b>版</b><span id="tbBuild">—</span>
         <b>状態</b><span id="tbState">停止中</span>
@@ -2680,6 +2703,30 @@ AXES.forEach(a=>{
   c.td=slider(host,"歯の深さ",0,0.14,0.005,s.toothDepth,v=>v.toFixed(3),v=>{s.toothDepth=v;rebuildGear(a);restart();});
   ctl[a]=c;
 });
+function addMobileRangeSteps(){
+  if(!MOBILE)return;
+  /* 指で狙いにくい連続操作を補い、値の意味を変えず既存の一刻みだけ進める。 */
+  document.querySelectorAll('#panel input[type="range"]:not(#scrub)').forEach(inp=>{
+    const row=inp.closest(".row"), label=row&&row.querySelector("label");
+    if(!row||inp.closest(".range-controls"))return;
+    const controls=document.createElement("span"); controls.className="range-controls";
+    const make=(text,dir)=>{
+      const b=document.createElement("button");
+      b.type="button"; b.className="range-step"; b.textContent=text;
+      b.setAttribute("aria-label",(label?label.textContent:"値")+(dir<0?"を一段下げる":"を一段上げる"));
+      b.onclick=()=>{
+        dir<0?inp.stepDown():inp.stepUp();
+        inp.dispatchEvent(new Event("input",{bubbles:true}));
+        inp.dispatchEvent(new Event("change",{bubbles:true}));
+      };
+      return b;
+    };
+    row.classList.add("range-row");
+    row.insertBefore(controls,inp);
+    controls.append(make("−",-1),inp,make("＋",1));
+  });
+}
+addMobileRangeSteps();
 function clampR(a){
   const s=stages[a];
   if(s.fixedShape==="line")return;
@@ -3549,7 +3596,8 @@ const FORMS=[
 ];
 (function fillEra(){
   const sel=$("eraSel");
-  for(let y=9;y<=23;y++){
+  /* 令和九年を第一期の起点に据えたまま、一段前は四年の梯子を逆にたどって導く。 */
+  for(let y=ERA_BASE-1;y<=23;y++){
     const g=gorinOfYear(y), o=document.createElement("option");
     o.value=String(y);
     o.textContent=`令和${y}年（${2018+y}）　${g.el}`;
@@ -3765,9 +3813,23 @@ $("btnRandom").onclick=()=>{
     btn.textContent="ランダムに紡ぐ"; btn.disabled=false;
   }));
 };
-$("toggle").onclick=()=>$("panel").classList.toggle("open");
+function setDrawingLogOpen(open){
+  /* 小さな画面では作図面を優先するが、必要な記録は見出しからいつでも戻せる。 */
+  $("titleblock").classList.toggle("collapsed",!open);
+  $("tbToggle").setAttribute("aria-expanded",String(open));
+  $("tbFold").textContent=open?"−":"＋";
+}
+$("tbToggle").onclick=()=>setDrawingLogOpen($("titleblock").classList.contains("collapsed"));
+setDrawingLogOpen(!MOBILE);
+
+function setPanelOpen(open){
+  $("panel").classList.toggle("open",open);
+  $("toggle").setAttribute("aria-expanded",String(open));
+  $("toggle").textContent=open?"閉じる":"設定";
+}
+$("toggle").onclick=()=>setPanelOpen(!$("panel").classList.contains("open"));
 stageEl.addEventListener("pointerdown",e=>{
-  if(e.target===renderer.domElement) $("panel").classList.remove("open");
+  if(e.target===renderer.domElement) setPanelOpen(false);
 });
 window.addEventListener("keydown",e=>{
   if(/^(INPUT|SELECT)$/.test(e.target.tagName))return;

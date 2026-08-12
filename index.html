@@ -284,6 +284,10 @@ select{flex:1;font-family:var(--jp);font-size:13px;font-weight:500;padding:9px 7
   /* 設定ボタンの実寸ぶんだけ見出しを下げ、全画面になっても閉じる操作を隠さない。 */
   #panel .head{padding-top:calc(62px + env(safe-area-inset-top))}
   #panel .body,#panel .row,#panel select,#panel .seg{min-width:0}
+  /* 作品名は他の選択肢より長いため、スマホでは一行分の幅を丸ごと渡す。 */
+  .preset-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+  .preset-row>label{width:auto;grid-column:1;flex:none}
+  .preset-row>#preset{width:100%;max-width:100%;min-width:0;grid-column:1}
   .row.range-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
   .row.range-row>label{grid-column:1;grid-row:1;flex:none}
   .row.range-row>.val{grid-column:2;grid-row:1;flex:none}
@@ -328,7 +332,7 @@ select{flex:1;font-family:var(--jp);font-size:13px;font-weight:500;padding:9px 7
         </div>
         <div class="collnote" id="collNote">—</div>
 
-        <div class="row"><label>作品</label>
+        <div class="row preset-row"><label>作品</label>
           <select id="preset"><option value="-">新しく生む（下の「完成させる」）</option></select>
         </div>
         <div class="worktitle" id="workTitle">—</div>

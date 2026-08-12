@@ -69,7 +69,7 @@ body{
   font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--ink-32)}
 
 /* ---------- panel ---------- */
-#panel{width:318px;flex:0 0 318px;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
+#panel{width:318px;flex:0 0 318px;height:100%;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;touch-action:pan-y;border-right:1px solid var(--rule);
   /* 背後の作品は気配だけ残し、細い文字の明度差は失わない。 */
   background:rgba(10,11,13,.94)}
@@ -107,6 +107,10 @@ input[type=range]::-moz-range-track{height:1px;background:var(--rule)}
 input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--ink)}
 select{flex:1;font-family:var(--jp);font-size:13px;font-weight:500;padding:9px 7px;background:var(--panel2);
   color:var(--ink);border:1px solid var(--rule);border-radius:0}
+/* 作品名はパネル幅より長くなり得るため、端末を問わず一行分の幅を丸ごと渡す。 */
+.preset-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.preset-row>label{width:auto;grid-column:1;flex:none}
+.preset-row>#preset{width:100%;max-width:100%;min-width:0;grid-column:1}
 .seg{display:flex;flex:1;border:1px solid var(--rule)}
 .seg button{flex:1;font-family:var(--jp);font-size:12.5px;font-weight:500;padding:9px 0;border:0;background:var(--panel2);
   color:var(--ink-60);cursor:pointer;border-right:1px solid var(--rule)}
@@ -284,10 +288,6 @@ select{flex:1;font-family:var(--jp);font-size:13px;font-weight:500;padding:9px 7
   /* 設定ボタンの実寸ぶんだけ見出しを下げ、全画面になっても閉じる操作を隠さない。 */
   #panel .head{padding-top:calc(62px + env(safe-area-inset-top))}
   #panel .body,#panel .row,#panel select,#panel .seg{min-width:0}
-  /* 作品名は他の選択肢より長いため、スマホでは一行分の幅を丸ごと渡す。 */
-  .preset-row{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
-  .preset-row>label{width:auto;grid-column:1;flex:none}
-  .preset-row>#preset{width:100%;max-width:100%;min-width:0;grid-column:1}
   .row.range-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
   .row.range-row>label{grid-column:1;grid-row:1;flex:none}
   .row.range-row>.val{grid-column:2;grid-row:1;flex:none}

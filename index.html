@@ -3616,16 +3616,10 @@ const FORMS=[
   flipSeason();
 });
 /* 年を切り替えたとき。
-   まだ形がなければ律に沿って生む。すでに作品があるなら、
-   歯車には触れない。年は名と型番だけを変える。 */
+   年の名だけが変わって基準形が残ると、律と作品が食い違う。
+   選んだ年の梯子から新しく生み、基準の段を必ず一致させる。 */
 function redrawByLaw(){
-  if(!workCfg && $("preset").value==="-"){
-    setRun(false); restart(); spinCollection(); return;
-  }
-  updateCollNote(); updateWorkBtn(); drawAllPreviews();
-  $("finishMsg").textContent=
-    `${collectionLabel()}　に切り替えました。形はそのままです。`
-    +`　この律で作り直すなら「新しく生む」を押してください。`;
+  setRun(false); restart(); spinCollection();
 }
 /* 季を切り替えたとき。
    転がる向きだけを裏返す。歯車の種類も寸法もペンの位置も変えない。
